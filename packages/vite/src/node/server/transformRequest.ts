@@ -100,6 +100,7 @@ export function transformRequest(
       })
   }
 
+  // 核心
   const request = doTransform(url, server, options, timestamp)
 
   // Avoid clearing the cache of future requests if aborted
@@ -133,6 +134,7 @@ async function doTransform(
   const prettyUrl = debugCache ? prettifyUrl(url, config.root) : ''
   const ssr = !!options.ssr
 
+  // 获取在依赖图谱中是否有此模块
   const module = await server.moduleGraph.getModuleByUrl(url, ssr)
 
   // tries to handle soft invalidation of the module if available,
@@ -153,6 +155,7 @@ async function doTransform(
     return cached
   }
 
+  // 处理路径
   const resolved = module
     ? undefined
     : (await pluginContainer.resolveId(url, undefined, { ssr })) ?? undefined
@@ -160,6 +163,7 @@ async function doTransform(
   // resolve
   const id = module?.id ?? resolved?.id ?? url
 
+  // 进行文件的加载跟转化
   const result = loadAndTransform(
     id,
     url,
@@ -197,6 +201,7 @@ async function loadAndTransform(
 
   // load
   const loadStart = debugLoad ? performance.now() : 0
+  // 加载文件
   const loadResult = await pluginContainer.load(id, { ssr })
   if (loadResult == null) {
     // if this is an html request and there is no load result, skip ahead to
@@ -211,6 +216,7 @@ async function loadAndTransform(
     // like /service-worker.js or /api/users
     if (options.ssr || isFileServingAllowed(file, server)) {
       try {
+        // 读取文件的内容
         code = await fsp.readFile(file, 'utf-8')
         debugLoad?.(`${timeFrom(loadStart)} [fs] ${prettyUrl}`)
       } catch (e) {
@@ -280,6 +286,7 @@ async function loadAndTransform(
 
   // transform
   const transformStart = debugTransform ? performance.now() : 0
+  // 进行转化 js 文件实际调用的是 vite:import-analysis 的 transform 方法
   const transformResult = await pluginContainer.transform(code, id, {
     inMap: map,
     ssr,

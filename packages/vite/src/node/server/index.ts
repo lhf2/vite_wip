@@ -738,6 +738,7 @@ export async function _createServer(
   }
 
   // main transform middleware
+  // 请求拦截
   middlewares.use(transformMiddleware(server))
 
   // serve static files

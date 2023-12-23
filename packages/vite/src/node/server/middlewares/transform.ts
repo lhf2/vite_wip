@@ -197,6 +197,7 @@ export function transformMiddleware(
         }
 
         // resolve, load and transform using the plugin container
+        // 核心
         const result = await transformRequest(url, server, {
           html: req.headers.accept?.includes('text/html'),
         })
