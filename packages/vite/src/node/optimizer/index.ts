@@ -310,6 +310,7 @@ export async function optimizeServerSsrDeps(
   return result.metadata
 }
 
+// 初始化依赖缓存元数据
 export function initDepsOptimizerMetadata(
   config: ResolvedConfig,
   ssr: boolean,
@@ -391,6 +392,7 @@ export function discoverProjectDependencies(config: ResolvedConfig): {
   cancel: () => Promise<void>
   result: Promise<Record<string, string>>
 } {
+  // 扫描导入项
   const { cancel, result } = scanImports(config)
 
   return {
@@ -586,6 +588,7 @@ export function runOptimizeDeps(
 
   const start = performance.now()
 
+  // 执行预构建
   const preparedRun = prepareEsbuildOptimizerRun(
     resolvedConfig,
     depsInfo,
@@ -606,6 +609,7 @@ export function runOptimizeDeps(
     }
 
     return context
+      // 执行 esbuild
       .rebuild()
       .then((result) => {
         const meta = result.metafile!
@@ -797,13 +801,13 @@ async function prepareEsbuildOptimizerRun(
   const context = await esbuild.context({
     absWorkingDir: process.cwd(),
     entryPoints: Object.keys(flatIdDeps),
-    bundle: true,
+    bundle: true, // 处理像 loadsh 发送很多请求的情况
     // We can't use platform 'neutral', as esbuild has custom handling
     // when the platform is 'node' or 'browser' that can't be emulated
     // by using mainFields and conditions
     platform,
     define,
-    format: 'esm',
+    format: 'esm', // 转化第三方包使用的非esm模块
     // See https://github.com/evanw/esbuild/issues/1921#issuecomment-1152991694
     banner:
       platform === 'node'

@@ -186,6 +186,7 @@ async function computeEntries(config: ResolvedConfig) {
       throw new Error('invalid rollupOptions.input value.')
     }
   } else {
+    // 初次进入入口为 index.html
     entries = await globEntries('**/*.html', config)
   }
 
@@ -200,6 +201,7 @@ async function computeEntries(config: ResolvedConfig) {
   return entries
 }
 
+// 预构建扫描
 async function prepareEsbuildScanner(
   config: ResolvedConfig,
   entries: string[],
@@ -207,10 +209,12 @@ async function prepareEsbuildScanner(
   missing: Record<string, string>,
   scanContext?: { cancelled: boolean },
 ): Promise<BuildContext | undefined> {
+  // 创建 vite 插件的一个容器
   const container = await createPluginContainer(config)
 
   if (scanContext?.cancelled) return
 
+  // 所有的文件都会走这个插件
   const plugin = esbuildScanPlugin(config, container, deps, missing, entries)
 
   const { plugins = [], ...esbuildOptions } =
@@ -329,6 +333,7 @@ function esbuildScanPlugin(
   }
 
   return {
+    // esbulid 插件的写法
     name: 'vite:dep-scan',
     setup(build) {
       const scripts: Record<string, OnLoadResult> = {}
@@ -358,6 +363,7 @@ function esbuildScanPlugin(
         return scripts[path]
       })
 
+      // 初次走这里
       // html types: extract script contents -----------------------------------
       build.onResolve({ filter: htmlTypesRE }, async ({ path, importer }) => {
         const resolved = await resolve(path, importer)

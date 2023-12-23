@@ -778,6 +778,7 @@ export async function _createServer(
       await container.buildStart({})
       // start deps optimizer after all container plugins are ready
       if (isDepsOptimizerEnabled(config, false)) {
+        // 在启动服务器之前进行依赖预构建
         await initDepsOptimizer(config, server)
       }
       warmupFiles(server)

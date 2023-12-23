@@ -651,6 +651,7 @@ export async function createPluginContainer(
       )
     },
 
+    // container.resloveId 走这里；
     async resolveId(rawId, importer = join(root, 'index.html'), options) {
       const skip = options?.skip
       const ssr = options?.ssr
@@ -670,6 +671,7 @@ export async function createPluginContainer(
         ctx._activePlugin = plugin
 
         const pluginResolveStart = debugPluginResolve ? performance.now() : 0
+        // 其实就是调用插件里面的 resolveId 方法
         const handler = getHookHandler(plugin.resolveId)
         const result = await handleHookPromise(
           handler.call(ctx as any, rawId, importer, {

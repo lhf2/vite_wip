@@ -55,6 +55,7 @@ export async function initDepsOptimizer(
   // Non Dev SSR Optimizer
   const ssr = config.command === 'build' && !!config.build.ssr
   if (!getDepsOptimizer(config, ssr)) {
+    // 创建依赖优化器
     await createDepsOptimizer(config, server)
   }
 }
@@ -97,6 +98,7 @@ async function createDepsOptimizer(
 
   const sessionTimestamp = Date.now().toString()
 
+  // 获取缓存元数据 看之前是否有缓存过
   const cachedMetadata = await loadCachedDepOptimizationMetadata(config, ssr)
 
   let debounceProcessingHandle: NodeJS.Timeout | undefined
@@ -229,6 +231,7 @@ async function createDepsOptimizer(
           try {
             debug?.(colors.green(`scanning for dependencies...`))
 
+            // 扫描项目的依赖，获取到依赖项 deps
             discover = discoverProjectDependencies(config)
             const deps = await discover.result
             discover = undefined
@@ -248,6 +251,7 @@ async function createDepsOptimizer(
             // run on the background, but we wait until crawling has ended
             // to decide if we send this result to the browser or we need to
             // do another optimize step
+            // 开始依赖打包
             optimizationResult = runOptimizeDeps(config, knownDeps)
           } catch (e) {
             logger.error(e.stack || e.message)

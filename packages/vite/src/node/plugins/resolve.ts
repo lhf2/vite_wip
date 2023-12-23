@@ -124,6 +124,7 @@ export interface InternalResolveOptions extends Required<ResolveOptions> {
   idOnly?: boolean
 }
 
+// 处理路径的插件
 export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
   const {
     root,
@@ -234,6 +235,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
 
       // URL
       // /foo -> /fs-root/foo
+      // 绝对路径：拼接项目根目录
       if (
         asSrc &&
         id[0] === '/' &&
@@ -342,6 +344,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
       }
 
       // bare package imports, perform node resolve
+      // 裸模块
       if (bareImportRE.test(id)) {
         const external = options.shouldExternalize?.(id, importer)
         if (
@@ -374,6 +377,7 @@ export function resolvePlugin(resolveOptions: InternalResolveOptions): Plugin {
           return res
         }
 
+        // 走这里
         if (
           (res = tryNodeResolve(
             id,
@@ -970,6 +974,8 @@ export function resolvePackageEntry(
   try {
     let entryPoint: string | undefined
 
+    // 裸模块路径的处理   
+    // 以 vue 为例子：找 node_modules 里面 vue/package.json 的 exports/./default，如果没有的话找 module 属性 
     // resolve exports field with highest priority
     // using https://github.com/lukeed/resolve.exports
     if (data.exports) {
