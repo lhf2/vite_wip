@@ -481,6 +481,7 @@ export async function _createServer(
       }
     },
     async listen(port?: number, isRestart?: boolean) {
+      // 启动服务器
       await startServer(server, port)
       if (httpServer) {
         server.resolvedUrls = await resolveServerUrls(

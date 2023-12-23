@@ -40,6 +40,7 @@ if (debugIndex > 0) {
   }
 }
 
+// 入口
 function start() {
   return import('../dist/node/cli.js')
 }

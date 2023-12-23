@@ -1,7 +1,7 @@
 import path from 'node:path'
 import fs from 'node:fs'
 import { performance } from 'node:perf_hooks'
-import { cac } from 'cac'
+import { cac } from 'cac' // 命令行工具库
 import colors from 'picocolors'
 import type { BuildOptions } from './build'
 import type { ServerOptions } from './server'
@@ -11,6 +11,7 @@ import { createLogger } from './logger'
 import { VERSION } from './constants'
 import { resolveConfig } from './config'
 
+// 创建一个 cli 实例
 const cli = cac('vite')
 
 // global options
@@ -151,6 +152,7 @@ cli
     filterDuplicateOptions(options)
     // output structure is preserved even after bundling so require()
     // is ok here
+    // 通过 cli.parse 解析成功之后会创建一个服务器
     const { createServer } = await import('./server')
     try {
       const server = await createServer({
@@ -168,6 +170,7 @@ cli
         throw new Error('HTTP server not available')
       }
 
+      // 启动服务
       await server.listen()
 
       const info = server.config.logger.info
@@ -382,4 +385,5 @@ cli
 cli.help()
 cli.version(VERSION)
 
+// 调用 parse 方法来解析命令
 cli.parse()

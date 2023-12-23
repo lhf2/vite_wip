@@ -74,8 +74,8 @@ export interface CommonServerOptions {
  */
 export interface CorsOptions {
   origin?:
-    | CorsOrigin
-    | ((origin: string, cb: (err: Error, origins: CorsOrigin) => void) => void)
+  | CorsOrigin
+  | ((origin: string, cb: (err: Error, origins: CorsOrigin) => void) => void)
   methods?: string | string[]
   allowedHeaders?: string | string[]
   exposedHeaders?: string | string[]
@@ -93,6 +93,7 @@ export async function resolveHttpServer(
   httpsOptions?: HttpsServerOptions,
 ): Promise<HttpServer> {
   if (!httpsOptions) {
+    // 真正创建服务器的地方 把之前通过 connect() 创建的服务器中间件传递过来（参数 app）
     const { createServer } = await import('node:http')
     return createServer(app)
   }
@@ -166,7 +167,7 @@ export async function httpServerStart(
     }
 
     httpServer.on('error', onError)
-
+    // 实际监听启动的地方
     httpServer.listen(port, host, () => {
       httpServer.removeListener('error', onError)
       resolve(port)
@@ -185,7 +186,7 @@ export function setClientErrorHandler(
       logger.warn(
         colors.yellow(
           'Server responded with status code 431. ' +
-            'See https://vitejs.dev/guide/troubleshooting.html#_431-request-header-fields-too-large.',
+          'See https://vitejs.dev/guide/troubleshooting.html#_431-request-header-fields-too-large.',
         ),
       )
     }
