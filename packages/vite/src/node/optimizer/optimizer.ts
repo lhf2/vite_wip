@@ -99,6 +99,7 @@ async function createDepsOptimizer(
   const sessionTimestamp = Date.now().toString()
 
   // 获取缓存元数据 看之前是否有缓存过
+  // step1. 根据 config 中的 cacheDir 读取缓存的 metadata 信息
   const cachedMetadata = await loadCachedDepOptimizationMetadata(config, ssr)
 
   let debounceProcessingHandle: NodeJS.Timeout | undefined
@@ -195,12 +196,15 @@ async function createDepsOptimizer(
     ])
   }
 
+  // 如果之前有缓存的 metadata，将不再创建依赖
+  // 比如之前已经 run 过 dev了，即使关掉再跑也不会再走这里，除非加上"--force"
   if (!cachedMetadata) {
     // Enter processing state until crawl of static imports ends
     currentlyProcessing = true
 
     // Initialize discovered deps with manually added optimizeDeps.include info
 
+    // step2. 给 metadata 添加 discovered 对象，里面包含 browserHash、hash、id、file 等属性
     const deps: Record<string, string> = {}
     await addManuallyIncludedOptimizeDeps(deps, config, ssr)
 
@@ -232,6 +236,7 @@ async function createDepsOptimizer(
             debug?.(colors.green(`scanning for dependencies...`))
 
             // 扫描项目的依赖，获取到依赖项 deps
+            // step3. 扫描并获取依赖
             discover = discoverProjectDependencies(config)
             const deps = await discover.result
             discover = undefined
@@ -252,6 +257,7 @@ async function createDepsOptimizer(
             // to decide if we send this result to the browser or we need to
             // do another optimize step
             // 开始依赖打包
+            // step4. 创建依赖（主要是runOptimizeDeps） 
             optimizationResult = runOptimizeDeps(config, knownDeps)
           } catch (e) {
             logger.error(e.stack || e.message)
@@ -360,6 +366,7 @@ async function createDepsOptimizer(
         })
 
       const commitProcessing = async () => {
+        // 核心
         await processingResult.commit()
 
         // While optimizeDeps is running, new missing deps may be discovered,
@@ -410,6 +417,7 @@ async function createDepsOptimizer(
       }
 
       if (!needsReload) {
+        // 会走到这里
         await commitProcessing()
 
         if (!debug) {
@@ -613,6 +621,8 @@ async function createDepsOptimizer(
   // During build, onCrawlEnd will be called once after each buildStart (so in
   // watch mode it will be called after each rebuild has processed every module).
   // All modules are transformed first in this case (both static and dynamic).
+
+  // 在浏览器输入 http://localhost:5173/ 之后会调用此方法
   async function onCrawlEnd() {
     // On build time, a missing dep appearing after onCrawlEnd is an internal error
     // On dev, switch after this point to a simple debounce strategy
@@ -680,6 +690,7 @@ async function createDepsOptimizer(
           ),
         )
         startNextDiscoveredBatch()
+        // 核心
         runOptimizer(result)
       }
     } else {

@@ -66,12 +66,14 @@ export function esbuildDepPlugin(
   const cjsPackageCache: PackageCache = new Map()
 
   // default resolver which prefers ESM
+  // 创建 ESM 的路径查找函数
   const _resolve = config.createResolver({
     asSrc: false,
     scan: true,
     packageCache: esmPackageCache,
   })
 
+  // 创建 CommonJS 的路径查找函数
   // cjs resolver that prefers Node
   const _resolveRequire = config.createResolver({
     asSrc: false,
@@ -79,7 +81,7 @@ export function esbuildDepPlugin(
     scan: true,
     packageCache: cjsPackageCache,
   })
-
+  // 返回不同的路径查找函数
   const resolve = (
     id: string,
     importer: string,
@@ -125,7 +127,7 @@ export function esbuildDepPlugin(
       path: path.resolve(resolved),
     }
   }
-
+  // 返回插件对象
   return {
     name: 'vite:dep-pre-bundle',
     setup(build) {

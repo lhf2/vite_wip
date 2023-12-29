@@ -233,6 +233,23 @@ export async function optimizeDeps(
 
   const ssr = config.command === 'build' && !!config.build.ssr
 
+  // 获取node_moduels/.vite/_metadata.json 文件后生成的对象（包含预构建后的依赖所在的文件位置、原文件所处的文件位置等）。
+  // {
+  //   "hash": "bade5e5e",
+  //   "browserHash": "830194d7",
+  //   "optimized": {
+  //     "vue": {
+  //       "file": "/Users/wjc/Documents/FE/demos/vite2.0-demo/node_modules/.vite/vue.js",
+  //       "src": "/Users/wjc/Documents/FE/demos/vite2.0-demo/node_modules/vue/dist/vue.runtime.esm-bundler.js",
+  //       "needsInterop": false
+  //     },
+  //     "lodash-es": {
+  //       "file": "/Users/wjc/Documents/FE/demos/vite2.0-demo/node_modules/.vite/lodash-es.js",
+  //       "src": "/Users/wjc/Documents/FE/demos/vite2.0-demo/node_modules/lodash-es/lodash.js",
+  //       "needsInterop": false
+  //     }
+  //   }
+  // }
   const cachedMetadata = await loadCachedDepOptimizationMetadata(
     config,
     ssr,
@@ -243,6 +260,7 @@ export async function optimizeDeps(
     return cachedMetadata
   }
 
+  // 获取依赖
   const deps = await discoverProjectDependencies(config).result
 
   const depsString = depsLogString(Object.keys(deps))
@@ -287,8 +305,8 @@ export async function optimizeServerSsrDeps(
       noExternal === true
         ? (dep: unknown) => true
         : createFilter(undefined, exclude, {
-            resolve: false,
-          })
+          resolve: false,
+        })
   }
 
   const deps: Record<string, string> = {}
@@ -359,6 +377,7 @@ export async function loadCachedDepOptimizationMetadata(
 
   const depsCacheDir = getDepsCacheDir(config, ssr)
 
+  // 不强制预购建 （vite 配置文件中 optimizeDeps 的 force 参数 ——> vite --force）
   if (!force) {
     let cachedMetadata: DepOptimizationMetadata | undefined
     try {
@@ -367,8 +386,9 @@ export async function loadCachedDepOptimizationMetadata(
         await fsp.readFile(cachedMetadataPath, 'utf-8'),
         depsCacheDir,
       )
-    } catch (e) {}
+    } catch (e) { }
     // hash is consistent, no need to re-bundle
+    // 缓存数据没更改 返回之前的缓存数据
     if (cachedMetadata && cachedMetadata.hash === getDepHash(config, ssr)) {
       log?.('Hash is consistent. Skipping. Use --force to override.')
       // Nothing to commit or cancel as we are using the cache, we only
@@ -381,6 +401,7 @@ export async function loadCachedDepOptimizationMetadata(
 
   // Start with a fresh cache
   debug?.(colors.green(`removing old cache dir ${depsCacheDir}`))
+  // 如果强制预购建 删除 node_modules/.vite 目录即可
   await fsp.rm(depsCacheDir, { recursive: true, force: true })
 }
 
@@ -466,7 +487,9 @@ export function runOptimizeDeps(
     command: 'build',
   }
 
+  // 依赖的文件目录 'E:/xx/xx/node_modules/.vite/deps' 
   const depsCacheDir = getDepsCacheDir(resolvedConfig, ssr)
+  // 临时缓存目录 'E:/xx/xx/node_modules/.vite/deps_temp' 
   const processingCacheDir = getProcessingDepsCacheDir(resolvedConfig, ssr)
 
   // Create a temporal directory so we don't need to delete optimized deps
@@ -477,13 +500,16 @@ export function runOptimizeDeps(
   // a hint for Node.js
   // all files in the cache directory should be recognized as ES modules
   debug?.(colors.green(`creating package.json in ${processingCacheDir}`))
+
+  // 给 .vite/deps 缓存目录添加 package.json，因为所有的缓存文件都应被识别为ES模块
   fs.writeFileSync(
     path.resolve(processingCacheDir, 'package.json'),
     `{\n  "type": "module"\n}\n`,
   )
 
+  // 初始化依赖的 metadata 信息
   const metadata = initDepsOptimizerMetadata(config, ssr)
-
+  // 生成由 hash 与 deps 组成的8位 browserHash（浏览器文件的请求会携带该 browserHash）
   metadata.browserHash = getOptimizedBrowserHash(
     metadata.hash,
     depsFromOptimizedDepInfo(depsInfo),
@@ -525,6 +551,7 @@ export function runOptimizeDeps(
 
       // Write metadata file, then commit the processing folder to the global deps cache
       // Rewire the file paths from the temporal processing dir to the final deps cache dir
+      // 生成新的_metadata.json
       const dataPath = path.join(processingCacheDir, '_metadata.json')
       debug?.(colors.green(`creating _metadata.json in ${processingCacheDir}`))
       fs.writeFileSync(
@@ -559,6 +586,7 @@ export function runOptimizeDeps(
         debug?.(
           colors.green(`renaming ${processingCacheDir} to ${depsCacheDir}`),
         )
+        // 把临时目录重命名为 deps 目录
         fs.renameSync(processingCacheDir, depsCacheDir)
       }
 
@@ -634,8 +662,8 @@ export function runOptimizeDeps(
             // and file path gives us a unique hash that may be useful for other things in the future
             fileHash: getHash(
               metadata.hash +
-                depsInfo[id].file +
-                JSON.stringify(output.imports),
+              depsInfo[id].file +
+              JSON.stringify(output.imports),
             ),
             browserHash: metadata.browserHash,
             // After bundling we have more information and can warn the user about legacy packages
@@ -729,7 +757,16 @@ async function prepareEsbuildOptimizerRun(
   // 1. flatten all ids to eliminate slash
   // 2. in the plugin, read the entry ourselves as virtual files to retain the
   //    path.
+  // 遍历收集所有预构建的模块列表
+  // flatIdDeps: { flatId: 对应模块的绝对路径 原地址 }
+  // "lodash-es": "根目录/node_modules/lodash-es/lodash.js"
+  // "vue": "根目录/node_modules/vue/dist/vue.runtime.esm-bundler.js"
   const flatIdDeps: Record<string, string> = {}
+  // idToExports: { id: 对应模块的AST，是一个数组 }
+  // "lodash-es": {hasImports: true, exports: ['add', 'after', 'ary', 'assign', 'assignIn', 'assignInWith', 'assignWith', 'at', 'attempt', 'before', 'bind', 'bindAll', 'bindKey', 'camelCase', 'capitalize', 'castArray', 'ceil', 'chain', 'chunk', 'clamp', 'clone', 'cloneDeep', 'cloneDeepWith', 'cloneWith', 'commit', 'compact', 'concat', 'cond', 'conforms', 'conformsTo', 'constant', 'countBy', 'create', 'curry', 'curryRight', 'debounce', 'deburr', 'defaultTo', 'defaults', 'defaultsDeep', 'defer', 'delay', 'difference', 'differenceBy', 'differenceWith', 'divide', 'drop', 'dropRight', 'dropRightWhile', 'dropWhile', 'each', 'eachRight', 'endsWith', 'entries', 'entriesIn', 'eq', 'escape', 'escapeRegExp', 'every', 'extend', 'extendWith', 'fill', 'filter', 'find', 'findIndex', 'findKey', 'findLast', 'findLastIndex', 'findLastKey', 'first', 'flatMap', 'flatMapDeep', 'flatMapDepth', 'flatten', 'flattenDeep', 'flattenDepth', 'flip', 'floor', 'flow', 'flowRight', 'forEach', 'forEachRight', 'forIn', 'forInRight', 'forOwn', 'forO…ght', …], jsxLoader: false}
+  // "vue": {hasImports: true, exports: ['compile'], jsxLoader: false}
+
+
   const idToExports: Record<string, ExportsData> = {}
 
   const optimizeDeps = getDepOptimizationConfig(config, ssr)
@@ -737,6 +774,7 @@ async function prepareEsbuildOptimizerRun(
   const { plugins: pluginsFromConfig = [], ...esbuildOptions } =
     optimizeDeps?.esbuildOptions ?? {}
 
+  // 遍历收集，通过 `es-module-lexer` 将模块转换成 AST，并赋值给 exportsData
   await Promise.all(
     Object.keys(depsInfo).map(async (id) => {
       const src = depsInfo[id].src!
@@ -792,6 +830,7 @@ async function prepareEsbuildOptimizerRun(
     }
   }
 
+  // 设置 build 打包上下文
   const plugins = [...pluginsFromConfig]
   if (external.length) {
     plugins.push(esbuildCjsExternalPlugin(external, platform))
@@ -812,8 +851,8 @@ async function prepareEsbuildOptimizerRun(
     banner:
       platform === 'node'
         ? {
-            js: `import { createRequire } from 'module';const require = createRequire(import.meta.url);`,
-          }
+          js: `import { createRequire } from 'module';const require = createRequire(import.meta.url);`,
+        }
         : undefined,
     target: isBuild ? config.build.target || undefined : ESBUILD_MODULES_TARGET,
     external,
@@ -835,6 +874,7 @@ async function prepareEsbuildOptimizerRun(
   return { context, idToExports }
 }
 
+// 处理配置中 optimizeDeps include 的模块
 export async function addManuallyIncludedOptimizeDeps(
   deps: Record<string, string>,
   config: ResolvedConfig,
@@ -849,8 +889,7 @@ export async function addManuallyIncludedOptimizeDeps(
     const unableToOptimize = (id: string, msg: string) => {
       if (optimizeDepsInclude.includes(id)) {
         logger.warn(
-          `${msg}: ${colors.cyan(id)}, present in '${
-            ssr ? 'ssr.' : ''
+          `${msg}: ${colors.cyan(id)}, present in '${ssr ? 'ssr.' : ''
           }optimizeDeps.include'`,
         )
       }
@@ -977,11 +1016,11 @@ export function createIsOptimizedDepUrl(
   const depsCacheDirRelative = normalizePath(path.relative(root, depsCacheDir))
   const depsCacheDirPrefix = depsCacheDirRelative.startsWith('../')
     ? // if the cache directory is outside root, the url prefix would be something
-      // like '/@fs/absolute/path/to/node_modules/.vite'
-      `/@fs/${removeLeadingSlash(normalizePath(depsCacheDir))}`
+    // like '/@fs/absolute/path/to/node_modules/.vite'
+    `/@fs/${removeLeadingSlash(normalizePath(depsCacheDir))}`
     : // if the cache directory is inside root, the url prefix would be something
-      // like '/node_modules/.vite'
-      `/${depsCacheDirRelative}`
+    // like '/node_modules/.vite'
+    `/${depsCacheDirRelative}`
 
   return function isOptimizedDepUrl(url: string): boolean {
     return url.startsWith(depsCacheDirPrefix)

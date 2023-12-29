@@ -298,6 +298,7 @@ cli
   })
 
 // optimize
+// 使用命令执行预构建依赖 vite optimize xx
 cli
   .command('optimize [root]', 'pre-bundle dependencies')
   .option(
@@ -319,6 +320,7 @@ cli
           },
           'serve',
         )
+        // 核心方法
         await optimizeDeps(config, options.force, true)
       } catch (e) {
         createLogger(options.logLevel).error(
