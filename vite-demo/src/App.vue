@@ -1,7 +1,11 @@
 <template>
-  <div>App<div>
+  <div>App</div>
 </template>
 
+<script>
+import { cloneDeep } from "lodash-es"
+console.log(cloneDeep({ a: 1 }))
+</script>
 <style scoped>
 .logo {
   height: 6em;
