@@ -705,6 +705,7 @@ export function importAnalysisPlugin(config: ResolvedConfig): Plugin {
           } ${prettyImporter}`,
         )
         // inject hot context
+        // 注入热更新相关的代码
         str().prepend(
           `import { createHotContext as __vite__createHotContext } from "${clientPublicPath}";` +
             `import.meta.hot = __vite__createHotContext(${JSON.stringify(

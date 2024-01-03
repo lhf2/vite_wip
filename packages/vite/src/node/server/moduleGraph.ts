@@ -85,6 +85,9 @@ export type ResolvedUrl = [
   meta: object | null | undefined,
 ]
 
+// moduleGraph 是Vite定义的用来记录整个应用的模块依赖图的
+// moduleGraph 是由一系列 map 组成，而这些 map 分别是 url、id、file 等与 ModuleNode 的映射
+// ModuleNode 是 Vite 中定义的最小模块单位
 export class ModuleGraph {
   urlToModuleMap = new Map<string, ModuleNode>()
   idToModuleMap = new Map<string, ModuleNode>()
@@ -147,6 +150,7 @@ export class ModuleGraph {
     }
   }
 
+  // 主要是用来清空被修改文件对应的 ModuleNode 对象的 transformResult 属性，使之前的模块已有的转换缓存失效（默认是有强缓存的）
   invalidateModule(
     mod: ModuleNode,
     seen: Set<ModuleNode> = new Set(),
@@ -192,6 +196,7 @@ export class ModuleGraph {
 
     // Don't invalidate mod.info and mod.meta, as they are part of the processing pipeline
     // Invalidating the transform result is enough to ensure this module is re-processed next time it is requested
+    // 使转换结果无效就足以确保下次请求时重新处理此模块
     mod.transformResult = null
     mod.ssrTransformResult = null
     mod.ssrModule = null

@@ -144,6 +144,7 @@ const debounceReload = (time: number) => {
 }
 const pageReload = debounceReload(50)
 
+// 当接收到服务端推送的消息，通过不同的消息类型做相应的处理
 async function handleMessage(payload: HMRPayload) {
   switch (payload.type) {
     case 'connected':
@@ -157,6 +158,7 @@ async function handleMessage(payload: HMRPayload) {
         }
       }, __HMR_TIMEOUT__)
       break
+    // 动态加载热更新模块
     case 'update':
       notifyListeners('vite:beforeUpdate', payload)
       // if this is the first update and there's already an error overlay, it
@@ -224,6 +226,7 @@ async function handleMessage(payload: HMRPayload) {
       notifyListeners(payload.event, payload.data)
       break
     }
+    // 刷新整个页面
     case 'full-reload':
       notifyListeners('vite:beforeFullReload', payload)
       if (payload.path && payload.path.endsWith('.html')) {

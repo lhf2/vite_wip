@@ -391,6 +391,8 @@ export async function _createServer(
   const httpServer = middlewareMode
     ? null
     : await resolveHttpServer(serverConfig, middlewares, httpsOptions)
+   
+  // 创建websocket服务
   const ws = createWebSocketServer(httpServer, config, httpsOptions)
 
   if (httpServer) {
@@ -399,6 +401,8 @@ export async function _createServer(
 
   // eslint-disable-next-line eqeqeq
   const watchEnabled = serverConfig.watch !== null
+
+  // 监听文件的变化
   const watcher = watchEnabled
     ? (chokidar.watch(
         // config file dependencies and env file might be outside of root
@@ -644,8 +648,10 @@ export async function _createServer(
     await onHMRUpdate(file, true)
   }
 
+  // 监听文件修改后的操作
   watcher.on('change', async (file) => {
     file = normalizePath(file)
+    // 执行的是 "vite:watch-package-data" 插件里面的 watchChange
     await container.watchChange(file, { event: 'update' })
     // invalidate module graph cache on file change
     moduleGraph.onFileChange(file)
