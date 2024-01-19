@@ -87,6 +87,7 @@ function setupWebSocket(
   )
 
   // Listen for messages
+  // 监听到服务端发送过来的消息 做处理
   socket.addEventListener('message', async ({ data }) => {
     handleMessage(JSON.parse(data))
   })

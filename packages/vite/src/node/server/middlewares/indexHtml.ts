@@ -373,6 +373,7 @@ const devHtmlHook: IndexHtmlTransformHook = async (
 
   html = s.toString()
 
+  // 给客户端注入 @vite/client.js 脚本的对象
   return {
     html,
     tags: [

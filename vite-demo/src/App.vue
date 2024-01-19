@@ -1,6 +1,6 @@
 <template>
   <div>App</div>
-</template>
+  </template>
 
 <script>
 import { cloneDeep } from "lodash-es"

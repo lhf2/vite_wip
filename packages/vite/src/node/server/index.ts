@@ -653,7 +653,7 @@ export async function _createServer(
     file = normalizePath(file)
     // 执行的是 "vite:watch-package-data" 插件里面的 watchChange
     await container.watchChange(file, { event: 'update' })
-    // invalidate module graph cache on file change
+    // 文件更改时使模块图缓存失效
     moduleGraph.onFileChange(file)
 
     await onHMRUpdate(file, false)

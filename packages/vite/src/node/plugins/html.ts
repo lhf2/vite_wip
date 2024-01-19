@@ -1190,6 +1190,7 @@ export async function applyHtmlTransforms(
         }
       }
 
+      // 注入脚本
       html = injectToHead(html, headPrependTags, true)
       html = injectToHead(html, headTags)
       html = injectToBody(html, bodyPrependTags, true)
